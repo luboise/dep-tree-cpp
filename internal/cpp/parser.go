@@ -43,9 +43,24 @@ type AngledInclude struct {
 }
 */
 
+type LineComment struct {
+	// Comment string `@LineCommentStart @LineCommentEnd`
+	Comment string `@LineComment`
+}
+
+type BlockComment struct {
+	Comment string `@BlockComment`
+}
+
+type Comment struct {
+	LineComment  *LineComment  `@@`
+	BlockComment *BlockComment `| @@`
+}
+
 type Statement struct {
-	Quoted *QuotedInclude `@@`
-	Angled *AngledInclude `| @@`
+	Quoted  *QuotedInclude `@@`
+	Angled  *AngledInclude `| @@`
+	Comment *Comment       `| @@`
 }
 
 type File struct {
@@ -55,14 +70,19 @@ type File struct {
 var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
+			{"BlockComment", `/\*(.|\n)+\*/`},
 			{"Include", "#include"},
-			{"KewWord", "(export|import|from)"},
-			{"Punctuation", `[,\./]`},
+			{"KeyWord", "(export|import|from)"},
+			{"Punctuation", `[,\.]`},
 			{"Ident", `[a-zA-Z]+`},
 			{"Newline", `\n+`},
-			{"Whitespace", `[ \t]+`},
 			{"String", `"[^"]+"`},
 			{"Angled", `<[^>]+>`},
+			{"LineComment", `//[^\r\n]*`},
+			{"Whitespace", `[ \t]+`},
+
+			// {"LineCommentStart", `//`},
+			// {"LineCommentEnd", `.+$`},
 
 			/*
 				{"Include", "#include"},
