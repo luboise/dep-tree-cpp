@@ -57,10 +57,19 @@ type Comment struct {
 	BlockComment *BlockComment `| @@`
 }
 
+type UsingDeclaration struct {
+	Tokens []string `"using" "namespace"?@Ident ("," "namespace"?@Ident)* @Semi`
+}
+
+type Ignored struct {
+	Comment *Comment          `@@`
+	Using   *UsingDeclaration `| @@`
+}
+
 type Statement struct {
 	Quoted  *QuotedInclude `@@`
 	Angled  *AngledInclude `| @@`
-	Comment *Comment       `| @@`
+	Ignored *Ignored       `| (@@ | Pragma) `
 }
 
 type File struct {
@@ -72,10 +81,13 @@ var (
 		[]lexer.SimpleRule{
 			{"BlockComment", `/\*(.|\n)+\*/`},
 			{"Include", "#include"},
-			{"KeyWord", "(export|import|from)"},
+			{"Pragma", "#pragma.*"},
+			{"KeyWord", "(export|import|from|using|namespace)"},
 			{"Punctuation", `[,\.]`},
-			{"Ident", `[a-zA-Z]+`},
+			{"Semi", `;`},
+			// {"Ident", `[a-zA-Z]+`},
 			{"Newline", `\n+`},
+			{"Ident", `([_a-zA-Z][a-zA-Z0-9]*::)*[_a-zA-Z0-9]+`},
 			{"String", `"[^"]+"`},
 			{"Angled", `<[^>]+>`},
 			{"LineComment", `//[^\r\n]*`},
