@@ -5,11 +5,14 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
+/*
 type ImportStatement struct {
-	Symbols []string `"import" @Ident ("," @Ident)*`
+	Symbols []string `"#include" "@Ident"`
 	From    string   `"from" @(Ident|Punctuation|"/")*`
 }
+*/
 
+/*
 type ExportStatement struct {
 	Symbol string `"export" @Ident`
 }
@@ -17,6 +20,22 @@ type ExportStatement struct {
 type Statement struct {
 	Import *ImportStatement `@@ |`
 	Export *ExportStatement `@@`
+}
+*/
+
+type QuotedInclude struct {
+	IncludeToken string `@Include`
+	IncludedFile string `@String`
+}
+
+type AngledInclude struct {
+	IncludeToken string `@Include`
+	IncludedFile string `@Angled`
+}
+
+type Statement struct {
+	Quoted *QuotedInclude `@@`
+	Angled *AngledInclude `|@@`
 }
 
 type File struct {
@@ -26,14 +45,16 @@ type File struct {
 var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
-			{"KewWord", "(export|import|from)"},
-			{"Punctuation", `[,\./]`},
-			{"Ident", `[a-zA-Z]+`},
+			{"Include", "#include"},
+			{"String", `"[^"]+"`},
+			{"Angled", `<[^>]+>`},
+			{"Ident", `[A-Za-z_][A-Za-z0-9_]*`},
 			{"Whitespace", `\s+`},
 		},
 	)
 	parser = participle.MustBuild[File](
 		participle.Lexer(lex),
+		participle.Unquote("String", "Angled"),
 		participle.Elide("Whitespace"),
 	)
 )

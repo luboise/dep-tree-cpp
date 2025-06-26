@@ -12,37 +12,38 @@ func TestParser(t *testing.T) {
 		Statements []Statement
 	}{
 		{
-			Name: "import foo from bar",
+			Name: `#include "file.h"`,
 			Statements: []Statement{{
-				Import: &ImportStatement{[]string{"foo"}, "bar"},
+				Quoted: &QuotedInclude{"#include", "file.h"},
 			}},
 		},
 		{
-			Name: "import foo, baz from ./internal.h",
+			Name: `#include <vector>`,
 			Statements: []Statement{{
-				Import: &ImportStatement{[]string{"foo", "baz"}, "./internal.h"},
-			}},
-		},
-		{
-			Name: "export foo",
-			Statements: []Statement{{
-				Export: &ExportStatement{"foo"},
+				Angled: &AngledInclude{"#include", "vector"},
 			}},
 		},
 
-		{
-			Name: "import foo, baz from ./bar.dl",
-			Statements: []Statement{{
-				Import: &ImportStatement{[]string{"foo", "baz"}, "./bar.dl"},
-			}},
-		},
-		{
-			Name: "import foo, baz from ./bar.dl\n\nexport foo",
-			Statements: []Statement{
-				{Import: &ImportStatement{[]string{"foo", "baz"}, "./bar.dl"}},
-				{Export: &ExportStatement{"foo"}},
-			},
-		},
+		// {
+		// 	Name: "export foo",
+		// 	Statements: []Statement{{
+		// 		Export: &ExportStatement{"foo"},
+		// 	}},
+		// },
+		//
+		// {
+		// 	Name: "import foo, baz from ./bar.dl",
+		// 	Statements: []Statement{{
+		// 		Import: &ImportStatement{[]string{"foo", "baz"}, "./bar.dl"},
+		// 	}},
+		// },
+		// {
+		// 	Name: "import foo, baz from ./bar.dl\n\nexport foo",
+		// 	Statements: []Statement{
+		// 		{Import: &ImportStatement{[]string{"foo", "baz"}, "./bar.dl"}},
+		// 		{Export: &ExportStatement{"foo"}},
+		// 	},
+		// },
 	}
 
 	for _, tt := range tests {

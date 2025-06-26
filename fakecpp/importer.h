@@ -1,1 +1,2 @@
-import foo from ./file.h
+#include "file.h"
+#include <vector>

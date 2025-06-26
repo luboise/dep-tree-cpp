@@ -34,11 +34,17 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 	var result language.ImportsResult
 
 	for _, statement := range file.Content.([]Statement) {
-		if statement.Import != nil {
+		if statement.Quoted != nil {
 			result.Imports = append(result.Imports, language.ImportEntry{
-				Symbols: statement.Import.Symbols,
-				// in our Dummy language, imports are always relative to source file.
-				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), statement.Import.From),
+				// TODO: Get the symbols from the other file instead of using the header file
+				Symbols: []string{statement.Quoted.IncludedFile},
+				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), statement.Quoted.IncludedFile),
+			})
+		} else if statement.Angled != nil {
+			result.Imports = append(result.Imports, language.ImportEntry{
+				// TODO: Get the symbols from the other file instead of using the header file
+				Symbols: []string{statement.Angled.IncludedFile},
+				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), statement.Angled.IncludedFile),
 			})
 		}
 	}
@@ -49,15 +55,17 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResult, error) {
 	var result language.ExportsResult
 
-	for _, statement := range file.Content.([]Statement) {
-		if statement.Export != nil {
-			result.Exports = append(result.Exports, language.ExportEntry{
-				// our Dummy Language only allows exporting 1 symbol at a time, and does not support aliasing.
-				Symbols: []language.ExportSymbol{{Original: statement.Export.Symbol}},
-				AbsPath: file.AbsPath,
-			})
+	/*
+		for _, statement := range file.Content.([]Statement) {
+				if statement.Export != nil {
+					result.Exports = append(result.Exports, language.ExportEntry{
+						// our Dummy Language only allows exporting 1 symbol at a time, and does not support aliasing.
+						Symbols: []language.ExportSymbol{{Original: statement.Export.Symbol}},
+						AbsPath: file.AbsPath,
+					})
+				}
 		}
-	}
+	*/
 
 	return &result, nil
 }
