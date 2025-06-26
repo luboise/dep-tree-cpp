@@ -8,6 +8,7 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/gabotechs/dep-tree/internal/config"
+	"github.com/gabotechs/dep-tree/internal/cpp"
 	"github.com/gabotechs/dep-tree/internal/dummy"
 	golang "github.com/gabotechs/dep-tree/internal/go"
 	"github.com/gabotechs/dep-tree/internal/graph"
@@ -142,6 +143,7 @@ func inferLang(files []string, cfg *config.Config) (language.Language, error) {
 		rust   int
 		golang int
 		dummy  int
+		cpp    int
 	}{}
 	top := struct {
 		lang string
@@ -179,6 +181,13 @@ func inferLang(files []string, cfg *config.Config) (language.Language, error) {
 				top.v = score.dummy
 				top.lang = "dummy"
 			}
+		case utils.EndsWith(file, cpp.Extensions):
+			score.cpp += 1
+			if score.cpp > top.v {
+				top.v = score.cpp
+				top.lang = "cpp"
+			}
+
 		}
 	}
 	if top.lang == "" {
@@ -195,6 +204,8 @@ func inferLang(files []string, cfg *config.Config) (language.Language, error) {
 		return golang.NewLanguage(files[0], &cfg.Golang)
 	case "dummy":
 		return &dummy.Language{}, nil
+	case "cpp":
+		return &cpp.Language{}, nil
 	default:
 		return nil, fmt.Errorf("file \"%s\" not supported", files[0])
 	}
