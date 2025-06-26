@@ -7,7 +7,7 @@ import (
 
 /*
 type ImportStatement struct {
-	Symbols []string `"#include" "@Ident"`
+	Symbols []string `"import" @Ident ("," @Ident)*`
 	From    string   `"from" @(Ident|Punctuation|"/")*`
 }
 */
@@ -24,6 +24,15 @@ type Statement struct {
 */
 
 type QuotedInclude struct {
+	IncludedFile string `"#include" @String`
+}
+
+type AngledInclude struct {
+	IncludedFile string `"#include" @Angled`
+}
+
+/*
+type QuotedInclude struct {
 	IncludeToken string `@Include`
 	IncludedFile string `@String`
 }
@@ -32,10 +41,11 @@ type AngledInclude struct {
 	IncludeToken string `@Include`
 	IncludedFile string `@Angled`
 }
+*/
 
 type Statement struct {
 	Quoted *QuotedInclude `@@`
-	Angled *AngledInclude `|@@`
+	Angled *AngledInclude `| @@`
 }
 
 type File struct {
@@ -46,15 +56,25 @@ var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
 			{"Include", "#include"},
+			{"KewWord", "(export|import|from)"},
+			{"Punctuation", `[,\./]`},
+			{"Ident", `[a-zA-Z]+`},
+			{"Newline", `\n+`},
+			{"Whitespace", `[ \t]+`},
 			{"String", `"[^"]+"`},
 			{"Angled", `<[^>]+>`},
-			{"Ident", `[A-Za-z_][A-Za-z0-9_]*`},
-			{"Whitespace", `\s+`},
+
+			/*
+				{"Include", "#include"},
+				{"KewWord", "(int|float)"},
+				{"Ident", `[A-Za-z_][A-Za-z0-9_]*`},
+				{"Whitespace", `[ \t]+`},
+			*/
 		},
 	)
 	parser = participle.MustBuild[File](
 		participle.Lexer(lex),
 		participle.Unquote("String", "Angled"),
-		participle.Elide("Whitespace"),
+		participle.Elide("Newline", "Whitespace"),
 	)
 )
