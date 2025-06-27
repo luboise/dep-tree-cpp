@@ -11,19 +11,59 @@ import (
 func TestParser(t *testing.T) {
 	simple_tests := []struct {
 		Name       string
+		Input      string
 		Statements []Statement
 	}{
 		{
-			Name: `#include "file.h"`,
+			Name:  "Quoted Include",
+			Input: `#include "file.h"`,
 			Statements: []Statement{{
 				Quoted: &QuotedInclude{"file.h"},
 			}},
 		},
 		{
-			Name: `#include <vector>`,
+			Name:  "Angled Include",
+			Input: `#include <vector>`,
 			Statements: []Statement{{
 				Angled: &AngledInclude{"vector"},
 			}},
+		},
+		{
+			Name: "Namespace with using and forward declarations",
+			Input: `
+namespace Foo {
+
+class ForwardedClass;
+using BarPtr = Ptr<Bar>;
+
+}  // namespace Presto
+			`,
+			Statements: []Statement{
+				{
+					Dec: &Declaration{
+						Namespace: &NamespaceDef{
+							Name: "Foo",
+							Items: []Declaration{
+								{
+									Fwd: &FwdDec{
+										Class: &ClassFwd{
+											Name: "ForwardedClass",
+										},
+									},
+								},
+								{
+									Using: &UsingStatement{
+										Alias: &TypeAlias{
+											Identifier: "BarPtr",
+											TypeID:     "Ptr<Bar>",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -49,7 +89,7 @@ func TestParser(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			a := require.New(t)
 
-			result, err := parser.ParseBytes("", []byte(tt.Name))
+			result, err := parser.ParseBytes("", []byte(tt.Input))
 			a.NoError(err)
 
 			a.Equal(tt.Statements, result.Statements)
