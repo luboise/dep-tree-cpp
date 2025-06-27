@@ -9,8 +9,7 @@ type Statement struct {
 	Quoted *QuotedInclude `@@`
 	Angled *AngledInclude `| @@`
 	Dec    *Declaration   `| @@`
-	Empty  bool           "| @Semi"
-	// Ignored *Ignored        `| (@@ | Pragma) `
+	Empty  bool           "| @Semi" // Accept empty statements
 }
 
 type QuotedInclude struct {
@@ -26,10 +25,56 @@ type Declaration struct {
 	TypeAlias *TypeAlias      "| @@"
 	Using     *UsingStatement "| @@"
 	Fwd       *FwdDec         "| @@"
+	Function  *FnDec          "| @@"
+}
+
+type Exp struct {
+	Left  string `@Ident`
+	Right ExpR   `@@`
+}
+
+type ExpR struct {
+	RVal *Value `"=" @@`
+}
+
+type Value struct {
+	Function *FunctionCall `@@`
+}
+
+type FunctionCall struct {
+	Name      string   `@Ident(`
+	RoundArgs *ArgList `( "(" @@ ")" )`
+	CurlyArgs *ArgList ` | ( "{" @@ "}" )  )`
+}
+
+type Arg struct {
+}
+
+type ArgList struct {
+	Values []Value `((@Value ",")* @Value) | @Value?`
+}
+
+type IdentifierList struct {
+	Identifiers []string `@Ident ("," @Ident)*`
 }
 
 type FwdDec struct {
 	Class *ClassFwd `@@`
+}
+
+type FnParam struct {
+	Type  string `"const"? @Ident`
+	Name  string `@Ident [\*&]*`
+	Value string `"=" @Ident`
+}
+
+type FnDec struct {
+	PreSpecifiers      []string  `@Ident*`
+	LeadingReturnType  string    `@Ident`
+	Name               string    `@Ident "("`
+	Parameters         []FnParam `@@*`
+	PostSpecifiers     []string  `")" @Ident*`
+	TrailingReturnType *string   `("->" @Ident)? ";"`
 }
 
 type ClassFwd struct {
@@ -44,10 +89,6 @@ type VariableDeclaration struct {
 	Type      string `@Ident`
 	Name      string `@Ident`
 	Semicolon string `@Semi`
-}
-
-type UsingBruh struct {
-	Tokens []string `"using" "namespace"? @Ident ("," "namespace"?@Ident)* ";"`
 }
 
 type UsingRValue struct {
@@ -65,7 +106,8 @@ type UsingDirective struct {
 // eg.
 // using std::vector, std::string, mynamespace::foo, mynamespace::bar;
 type UsingDeclaration struct {
-	Tokens []string `@Ident ("," @Ident)*`
+	// Tokens []string `@Ident ("," @Ident)*`
+	Tokens *IdentifierList `@@`
 }
 
 type TypeAlias struct {
@@ -91,27 +133,12 @@ type NamespaceDef struct {
 	Items []Declaration `@@* "}"`
 }
 
-/*
-type Ignored struct {
-	Alias *TypeAlias `@@`
-	// Using    *UsingBruh `| @@`
-	NSDef    *NamespaceDef `| @@`
-	Declared *DeclaredItem `| @@`
-}
-*/
-
-/*
-type ClassItem {
-	Var *VariaVariableDeclaration `@Ident @Ident`
-}
-*/
-
 var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
 			{"Include", "#include"},
-			{"KeyWord", "(export|import|using|namespace|class|struct)"},
-			{"Punctuation", `[,\.\{\}=]`},
+			{"KeyWord", "(const|export|import|using|namespace|class|struct)"},
+			{"Punctuation", `[,\.\{\}=\(\)&]`},
 			{"Semi", `;`},
 			// {"Ident", `[a-zA-Z]+`},
 			{"Newline", `\n+`},

@@ -65,6 +65,42 @@ using BarPtr = Ptr<Bar>;
 				},
 			},
 		},
+		{
+			Name: "Namespace with function declarations",
+			Input: `
+			namespace testns {
+class ForwardedClass;
+
+ImagePtr LoadImage(const AssetArg& path, Presto::string name = "");
+
+}
+
+			`,
+			Statements: []Statement{
+				{
+					Dec: &Declaration{
+						Namespace: &NamespaceDef{
+							Name: "testns",
+							Items: []Declaration{
+								{
+									Fwd: &FwdDec{
+										Class: &ClassFwd{
+											Name: "ForwardedClass",
+										},
+									},
+								},
+								{
+									Function: &FnDec{
+										LeadingReturnType: "ImagePtr",
+										Name:              "LoadImage",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	file_tests := []struct {
