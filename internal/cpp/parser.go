@@ -28,6 +28,19 @@ type Declaration struct {
 	Function  *FnDec          "| @@"
 }
 
+/*
+type Type struct {
+	Name Ident
+	Name string `("::"@Ident)+`
+	Name bool   `@Ident`
+}
+*/
+
+type Type struct {
+	IsConst bool   `"const"?`
+	Name    string `("::"? @Ident | "<" @Ident ">")+ ("&"+ | "*"+)?`
+}
+
 type Exp struct {
 	Left  string `@Ident`
 	Right ExpR   `@@`
@@ -37,21 +50,26 @@ type ExpR struct {
 	RVal *Value `"=" @@`
 }
 
+type String struct {
+	String string `@String`
+}
+
 type Value struct {
 	Function *FunctionCall `@@`
+	String   *String       `| @@`
 }
 
 type FunctionCall struct {
 	Name      string   `@Ident(`
-	RoundArgs *ArgList `( "(" @@ ")" )`
-	CurlyArgs *ArgList ` | ( "{" @@ "}" )  )`
+	RoundArgs *ArgList `( "(" @@ ")" ) |`
+	CurlyArgs *ArgList `( "{" @@ "}" )  )`
 }
 
 type Arg struct {
 }
 
 type ArgList struct {
-	Values []Value `((@Value ",")* @Value) | @Value?`
+	Values []Value `((@@ ",")* (@@)?)`
 }
 
 type IdentifierList struct {
@@ -62,19 +80,33 @@ type FwdDec struct {
 	Class *ClassFwd `@@`
 }
 
+type FunctionType struct {
+	Type Type    `@@`
+	Name *string `@Ident?`
+
+	// Value   *string `("=" @String)?`
+	Value *Value `("=" @@)?`
+}
+
+/*
 type FnParam struct {
 	Type  string `"const"? @Ident`
-	Name  string `@Ident [\*&]*`
+	Name  string `@Ident [\*&]?`
 	Value string `"=" @Ident`
+}
+*/
+
+type FnPreSpecifiers struct {
+	Specifiers []string `@Ident*`
 }
 
 type FnDec struct {
-	PreSpecifiers      []string  `@Ident*`
-	LeadingReturnType  string    `@Ident`
-	Name               string    `@Ident "("`
-	Parameters         []FnParam `@@*`
-	PostSpecifiers     []string  `")" @Ident*`
-	TrailingReturnType *string   `("->" @Ident)? ";"`
+	PreSpecifiers      *FnPreSpecifiers `@@?`
+	LeadingReturnType  Type             `@@`
+	Name               string           `@Ident "("`
+	Parameters         []FunctionType   `( @@ ( "," @@ )* )? ")"`
+	PostSpecifiers     []string         `@Ident*`
+	TrailingReturnType *string          `("->" @Ident)? ";"`
 }
 
 type ClassFwd struct {
@@ -143,7 +175,7 @@ var (
 			// {"Ident", `[a-zA-Z]+`},
 			{"Newline", `\n+`},
 			{"Ident", `([_a-zA-Z][a-zA-Z0-9]*::)*[_a-zA-Z0-9]+`},
-			{"String", `"[^"]+"`},
+			{"String", `"[^"]*"`},
 			{"Angled", `<[^>]+>`},
 			{"Whitespace", `[ \t]+`},
 

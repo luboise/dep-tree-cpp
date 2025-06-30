@@ -36,8 +36,7 @@ namespace Foo {
 class ForwardedClass;
 using BarPtr = Ptr<Bar>;
 
-}  // namespace Presto
-			`,
+}  // namespace Presto`,
 			Statements: []Statement{
 				{
 					Dec: &Declaration{
@@ -55,7 +54,7 @@ using BarPtr = Ptr<Bar>;
 									Using: &UsingStatement{
 										Alias: &TypeAlias{
 											Identifier: "BarPtr",
-											TypeID:     "Ptr<Bar>",
+											TypeID:     "PtrBar",
 										},
 									},
 								},
@@ -73,9 +72,7 @@ class ForwardedClass;
 
 ImagePtr LoadImage(const AssetArg& path, Presto::string name = "");
 
-}
-
-			`,
+}`,
 			Statements: []Statement{
 				{
 					Dec: &Declaration{
@@ -91,8 +88,14 @@ ImagePtr LoadImage(const AssetArg& path, Presto::string name = "");
 								},
 								{
 									Function: &FnDec{
-										LeadingReturnType: "ImagePtr",
+										LeadingReturnType: Type{Name: "ImagePtr"},
 										Name:              "LoadImage",
+										Parameters: []FunctionType{
+											{Type: Type{IsConst: true, Name: "AssetArg& path"},
+												Value: &Value{
+													String: &String{String: `""`}},
+											},
+										},
 									},
 								},
 							},
