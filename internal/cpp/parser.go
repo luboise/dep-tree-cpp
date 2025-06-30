@@ -5,21 +5,6 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
-type Statement struct {
-	Quoted *QuotedInclude `@@`
-	Angled *AngledInclude `| @@`
-	Dec    *Declaration   `| @@`
-	Empty  bool           "| @Semi" // Accept empty statements
-}
-
-type QuotedInclude struct {
-	IncludedFile string `"#include" @String`
-}
-
-type AngledInclude struct {
-	IncludedFile string `"#include" @Angled`
-}
-
 type Declaration struct {
 	Namespace *NamespaceDef   "@@"
 	TypeAlias *TypeAlias      "| @@"
@@ -165,29 +150,53 @@ type NamespaceDef struct {
 	Items []Declaration `@@* "}"`
 }
 
+type Include struct {
+	Token  string  `"#include"`
+	Angled *string `@Angled?`
+	Quoted *string `@String?`
+}
+
+type Statement struct {
+	Include *Include `@@ "@Brother"?`
+	// Empty   bool     `| (@Semi|"\n")` // Accept empty statements
+}
+
+type QuotedInclude struct {
+	IncludedFile string `"#include" @String`
+}
+
+type AngledInclude struct {
+	IncludedFile string `"#include" @Angled`
+}
+
 var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
 			{"Include", "#include"},
+			{"BadPreprocessor", "#([^i]|i[^n]|in[^c]|inc[^l]|incl[^u]|inclu[^d]|includ[^e])"},
+			{"Pragma", "#pragma.*\n"},
+			{"Define", "#define.*\n"},
+			{"BadLine", "^[^#].*\n"},
+			{"LineComment", `//[^\r\n]*`},
+			{"BlockComment", `/\*(.|\n)+\*/`},
+			{"String", `"[^"]*"`},
+			{"Angled", `<[^>]+>`},
+			{"EmptyLine", "^\n$"},
+			{"Brother", "[^\n]+"},
 			{"KeyWord", "(const|export|import|using|namespace|class|struct)"},
 			{"Punctuation", `[,\.\{\}=\(\)&]`},
 			{"Semi", `;`},
 			// {"Ident", `[a-zA-Z]+`},
 			{"Newline", `\n+`},
 			{"Ident", `([_a-zA-Z][a-zA-Z0-9]*::)*[_a-zA-Z0-9]+`},
-			{"String", `"[^"]*"`},
-			{"Angled", `<[^>]+>`},
 			{"Whitespace", `[ \t]+`},
 
 			// Elided rules
-			{"LineComment", `//[^\r\n]*`},
-			{"BlockComment", `/\*(.|\n)+\*/`},
-			{"Pragma", "#pragma.*\n"},
 		},
 	)
 	parser = participle.MustBuild[File](
 		participle.Lexer(lex),
 		participle.Unquote("String", "Angled"),
-		participle.Elide("LineComment", "BlockComment", "Newline", "Whitespace", "Pragma"),
+		participle.Elide("BadPreprocessor", "BadLine", "Define", "EmptyLine", "LineComment", "BlockComment", "Newline", "Whitespace", "Pragma"),
 	)
 )

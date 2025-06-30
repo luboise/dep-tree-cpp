@@ -34,16 +34,19 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 	var result language.ImportsResult
 
 	for _, statement := range file.Content.([]Statement) {
-		if statement.Quoted != nil {
+		if statement.Include != nil {
+			if statement.Include.Quoted != nil {
+				result.Imports = append(result.Imports, language.ImportEntry{
+					// TODO: Get the symbols from the other file instead of using the header file
+					Symbols: []string{*statement.Include.Quoted},
+					AbsPath: filepath.Join(filepath.Dir(file.AbsPath), *statement.Include.Quoted),
+				})
+			}
+		} else if statement.Include.Angled != nil {
 			result.Imports = append(result.Imports, language.ImportEntry{
 				// TODO: Get the symbols from the other file instead of using the header file
-				Symbols: []string{statement.Quoted.IncludedFile},
-				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), statement.Quoted.IncludedFile),
-			})
-		} else if statement.Angled != nil {
-			result.Imports = append(result.Imports, language.ImportEntry{
-				Symbols: []string{statement.Angled.IncludedFile},
-				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), statement.Angled.IncludedFile),
+				Symbols: []string{*statement.Include.Angled},
+				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), *statement.Include.Angled),
 			})
 		}
 	}
@@ -55,11 +58,15 @@ func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResul
 	var result language.ExportsResult
 
 	for _, statement := range file.Content.([]Statement) {
-		if statement.Angled != nil {
-			result.Exports = append(result.Exports, language.ExportEntry{
-				Symbols: []language.ExportSymbol{{Original: statement.Angled.IncludedFile}},
-				AbsPath: file.AbsPath,
-			})
+		if statement.Include != nil {
+			if statement.Include.Quoted != nil {
+
+				result.Exports = append(result.Exports, language.ExportEntry{
+					Symbols: []language.ExportSymbol{{Original: *statement.Include.Angled}},
+					AbsPath: file.AbsPath,
+				})
+
+			}
 		}
 	}
 
