@@ -14,10 +14,23 @@ type IncludeDirective struct {
 	Angled *string `| @AngledInclude)`
 }
 
+type TypeName struct {
+	Name string `@NamespaceAccess? @Ident (@NamespaceAccess @Ident)*`
+}
+
+// https://en.cppreference.com/w/cpp/language/namespace.html#Using-declarations
+// eg.
+// using std::vector, std::string, mynamespace::foo, mynamespace::bar;
+type UsingDeclaration struct {
+	// Tokens []string `@Ident ("," @Ident)*`
+	Tokens []TypeName `"using" @@ ("," @@)* ";"`
+}
+
 type Statement struct {
 	Include             *IncludeDirective `@@`
 	IgnoredPreprocessor *string           `| @PreprocessorLine`
-	Using               *UsingDirective   `| @@`
+	UsingDirective      *UsingDirective   `| @@`
+	UsingDec            *UsingDeclaration `| @@`
 }
 
 type File struct {
@@ -40,12 +53,14 @@ var (
 
 			{"NamespaceAccess", `::`, nil},
 			{"Semi", `;`, nil},
+			{"Comma", `,`, nil},
 			{"Hash", `#`, nil},
 
 			{"Ident", `[a-zA-Z_][a-zA-Z0-9_]*`, nil},
 
 			{"Whitespace", `[ \t]+`, nil},
 			{"Newline", `[\r\n]+`, nil},
+			{"Anything", ".*\n?", nil},
 		},
 
 		"Comment": {
