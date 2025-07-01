@@ -5,6 +5,8 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
+/*
+
 type Declaration struct {
 	Namespace *NamespaceDef   "@@"
 	TypeAlias *TypeAlias      "| @@"
@@ -12,14 +14,6 @@ type Declaration struct {
 	Fwd       *FwdDec         "| @@"
 	Function  *FnDec          "| @@"
 }
-
-/*
-type Type struct {
-	Name Ident
-	Name string `("::"@Ident)+`
-	Name bool   `@Ident`
-}
-*/
 
 type Type struct {
 	IsConst bool   `"const"?`
@@ -73,13 +67,11 @@ type FunctionType struct {
 	Value *Value `("=" @@)?`
 }
 
-/*
 type FnParam struct {
 	Type  string `"const"? @Ident`
 	Name  string `@Ident [\*&]?`
 	Value string `"=" @Ident`
 }
-*/
 
 type FnPreSpecifiers struct {
 	Specifiers []string `@Ident*`
@@ -96,10 +88,6 @@ type FnDec struct {
 
 type ClassFwd struct {
 	Name string `"class" @Ident ";"`
-}
-
-type File struct {
-	Statements []Statement `@@*`
 }
 
 type VariableDeclaration struct {
@@ -138,19 +126,16 @@ type UsingStatement struct {
 	Directive   *UsingDirective   `| @@) ";"`
 }
 
-/*
 type Declaration struct {
 	VarDec   *VariableDeclaration "@@"
 	ClassDec *ClassDeclaration    "| @@"
 }
-*/
 
 type NamespaceDef struct {
 	Name  string        `"namespace" @Ident "{"`
 	Items []Declaration `@@* "}"`
 }
 
-/*
 type Include struct {
 	Angled *string `"#include" @Angled @LineComment?`
 	Quoted *string `| "#include" @String @LineComment?`
@@ -158,48 +143,54 @@ type Include struct {
 */
 
 type QuotedInclude struct {
-	IncludedFile string `"#include" @String`
+	IncludedFile string `@QuotedInclude`
 }
 
 type AngledInclude struct {
-	IncludedFile string `"#include" @Angled`
+	IncludedFile string `@AngledInclude`
 }
 
 type Statement struct {
-	Quoted *QuotedInclude `@@ "@Brother"?`
-	Angled *AngledInclude `| @@ "@Brother"?`
+	Quoted *QuotedInclude `@@`
+	Angled *AngledInclude `| @@`
 	// Empty   bool     `| (@Semi|"\n")` // Accept empty statements
+}
+
+type File struct {
+	Statements []Statement `@@*`
 }
 
 var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
-			{"Include", "#include"},
-			{"BadPreprocessor", "#([^i]|i[^n]|in[^c]|inc[^l]|incl[^u]|inclu[^d]|includ[^e])"},
-			{"Pragma", "#pragma.*\n"},
-			{"Define", "#define.*\n"},
-			{"BadLine", "^[^#].*\n"},
+			// {"Include", "#include"},
+			{"QuotedInclude", `#include\s+"[^"]+"`},
+			{"AngledInclude", `#include\s+<[^<]+>`},
+
+			// {"BadPreprocessor", "^#([^i]|i[^n]|in[^c]|inc[^l]|incl[^u]|inclu[^d]|includ[^e])"},
+			// {"Pragma", "#pragma.*\n"},
+			// {"Define", "#define.*\n"},
+			// {"BadLine", "^[^#].*\n"},
+			// {"EmptyLine", "^\n$"},
+			// {"Brother", "[^\n]+"},
+			// {"KeyWord", "(const|export|import|using|namespace|class|struct)"},
+			// {"Punctuation", `[,\.\{\}=\(\)&]`},
+			// {"Semi", `;`},
+			// {"Ident", `[a-zA-Z]+`},
+			// {"Newline", `[\n\r]+`},
+			// {"Ident", `([_a-zA-Z][a-zA-Z0-9]*::)*[_a-zA-Z0-9]+`},
 			{"LineComment", `//[^\r\n]*`},
 			{"BlockComment", `/\*(.|\n)+\*/`},
-			{"String", `"[^"]*"`},
-			{"Angled", `<[^>]+>`},
-			{"EmptyLine", "^\n$"},
-			{"Brother", "[^\n]+"},
-			{"KeyWord", "(const|export|import|using|namespace|class|struct)"},
-			{"Punctuation", `[,\.\{\}=\(\)&]`},
-			{"Semi", `;`},
-			// {"Ident", `[a-zA-Z]+`},
-			{"Newline", `\n+`},
-			{"Ident", `([_a-zA-Z][a-zA-Z0-9]*::)*[_a-zA-Z0-9]+`},
-			{"Whitespace", `[ \t]+`},
+			{"Whitespace", `\s+`},
+			{"Other", `.+`},
 
 			// Elided rules
 		},
 	)
 	parser = participle.MustBuild[File](
 		participle.Lexer(lex),
-		participle.Unquote("String", "Angled"),
-		participle.Elide("LineComment", "BadPreprocessor", "BadLine", "Define", "EmptyLine", "BlockComment", "Newline", "Whitespace", "Pragma"),
+		// participle.Unquote("String", "Angled"),
+		participle.Elide("LineComment", "BlockComment", "Whitespace", "Other"),
 	)
 )
 

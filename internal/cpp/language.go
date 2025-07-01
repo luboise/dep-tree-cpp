@@ -58,7 +58,7 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 			} else {
 				fmt.Println("FOUND AN ABSOLUTE IMPORT")
 				if l.Cfg == nil {
-					fmt.Println("NO CONFIG FOUND")
+					fmt.Println("NO CONFIG FOUND. SKIPPING ABSOLUTE IMPORT.")
 					continue
 				}
 
