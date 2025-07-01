@@ -205,7 +205,7 @@ func inferLang(files []string, cfg *config.Config) (language.Language, error) {
 	case "dummy":
 		return &dummy.Language{}, nil
 	case "cpp":
-		return &cpp.Language{}, nil
+		return cpp.MakeCppLanguage(&cfg.Cpp)
 	default:
 		return nil, fmt.Errorf("file \"%s\" not supported", files[0])
 	}

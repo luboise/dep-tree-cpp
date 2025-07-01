@@ -2,12 +2,12 @@
 # some big files that everyone depends on and that don't add
 # value to the visualization, like auto generated code.
 exclude:
-  - 'some-glob-pattern/**/*.ts'
+  - "some-glob-pattern/**/*.ts"
 
 # The only files that will be included by dep-tree. If a file does not
 # match any of the provided patters, it is ignored.
 only:
-  - 'some-glob-pattern/**/*.ts'
+  - "some-glob-pattern/**/*.ts"
 
 # Whether to unwrap re-exports to the target file or not.
 # Imagine that you have the following setup:
@@ -52,15 +52,15 @@ check:
   allow:
     # example: any file in `src/products` can only depend on files that are also
     # in the `src/products` folder or in the `src/helpers` folder.
-    'src/products/**':
-      - 'src/products/**'
-      - 'src/helpers/**'
+    "src/products/**":
+      - "src/products/**"
+      - "src/helpers/**"
     # additionally, instead of providing a simple list of allowed dependencies, you
     # can also provide the reason for this restriction to exist, that way, when if the
     # check fails, an informative error is displayed through stderr.
-    'src/users/**':
+    "src/users/**":
       to:
-       - 'src/helpers/**'
+        - "src/helpers/**"
       reason: The Users domain is only allowed to import helper code, nothing else
 
   # map from glob pattern to array of glob patterns that determines forbidden
@@ -70,15 +70,15 @@ check:
   deny:
     # example: files inside `src/products` cannot depend on files inside `src/users`,
     # as they are supposed to belong to different domains.
-    'src/products/**':
-      - 'src/users/**'
+    "src/products/**":
+      - "src/users/**"
     # additionally, instead of providing a simple list of forbidden dependencies, you
     # can also provide the reason for each individual restriction to exist. If one of
     # these rules is broken, the reason will be displayed through stderr
-    'src/users/**':
-      - to: 'src/products/**'
+    "src/users/**":
+      - to: "src/products/**"
         reason: The Users domain should not import anything from the Products domain
-      - to: 'src/orders/**'
+      - to: "src/orders/**"
         reason: The Users domain should not import anything from the Orders domain
 
   # typically, in a project, there is a set of files that are always good to depend
@@ -93,10 +93,10 @@ check:
     #   allow:
     #     'src/products/**':
     #       - 'common'
-    'common':
-      - 'src/helpers/**'
-      - 'src/utils/**'
-      - 'src/generated/**'
+    "common":
+      - "src/helpers/**"
+      - "src/utils/**"
+      - "src/generated/**"
 
 # JavaScript and TypeScript specific settings.
 js:
@@ -125,3 +125,11 @@ python:
 # Rust specific settings.
 rust:
   # None available at the moment.
+
+cpp:
+  recursiveIncludePaths:
+    #- ~/MyProject/include
+    #- ~/MyProject/external/ExternalProject/include
+  nonRecursiveIncludePaths:
+    #- /usr/include/c++/v1           # libc++ ABI for clang
+    #- /usr/include/c++/<version>/   #libstdc++ ABI for gcc
