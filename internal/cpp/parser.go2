@@ -1,0 +1,260 @@
+package cpp
+
+import (
+	"github.com/alecthomas/participle/v2"
+	"github.com/alecthomas/participle/v2/lexer"
+)
+
+/*
+
+type Declaration struct {
+	Namespace *NamespaceDef   "@@"
+	TypeAlias *TypeAlias      "| @@"
+	Using     *UsingStatement "| @@"
+	Fwd       *FwdDec         "| @@"
+	Function  *FnDec          "| @@"
+}
+
+type Type struct {
+	IsConst bool   `"const"?`
+	Name    string `("::"? @Ident | "<" @Ident ">")+ ("&"+ | "*"+)?`
+}
+
+type Exp struct {
+	Left  string `@Ident`
+	Right ExpR   `@@`
+}
+
+type ExpR struct {
+	RVal *Value `"=" @@`
+}
+
+type String struct {
+	String string `@String`
+}
+
+type Value struct {
+	Function *FunctionCall `@@`
+	String   *String       `| @@`
+}
+
+type FunctionCall struct {
+	Name      string   `@Ident(`
+	RoundArgs *ArgList `( "(" @@ ")" ) |`
+	CurlyArgs *ArgList `( "{" @@ "}" )  )`
+}
+
+type Arg struct {
+}
+
+type ArgList struct {
+	Values []Value `((@@ ",")* (@@)?)`
+}
+
+type IdentifierList struct {
+	Identifiers []string `@Ident ("," @Ident)*`
+}
+
+type FwdDec struct {
+	Class *ClassFwd `@@`
+}
+
+type FunctionType struct {
+	Type Type    `@@`
+	Name *string `@Ident?`
+
+	// Value   *string `("=" @String)?`
+	Value *Value `("=" @@)?`
+}
+
+type FnParam struct {
+	Type  string `"const"? @Ident`
+	Name  string `@Ident [\*&]?`
+	Value string `"=" @Ident`
+}
+
+type FnPreSpecifiers struct {
+	Specifiers []string `@Ident*`
+}
+
+type FnDec struct {
+	PreSpecifiers      *FnPreSpecifiers `@@?`
+	LeadingReturnType  Type             `@@`
+	Name               string           `@Ident "("`
+	Parameters         []FunctionType   `( @@ ( "," @@ )* )? ")"`
+	PostSpecifiers     []string         `@Ident*`
+	TrailingReturnType *string          `("->" @Ident)? ";"`
+}
+
+type ClassFwd struct {
+	Name string `"class" @Ident ";"`
+}
+
+type VariableDeclaration struct {
+	Type      string `@Ident`
+	Name      string `@Ident`
+	Semicolon string `@Semi`
+}
+
+type UsingRValue struct {
+	Value string `"=" @Ident`
+}
+
+// https://en.cppreference.com/w/cpp/language/namespace.html#Using-declarations
+// eg.
+// using std::vector, std::string, mynamespace::foo, mynamespace::bar;
+type UsingDeclaration struct {
+	// Tokens []string `@Ident ("," @Ident)*`
+	Tokens *IdentifierList `@@`
+}
+
+type TypeAlias struct {
+	Identifier string `@Ident "="`
+	TypeID     string `@Ident @Angled?`
+}
+
+type UsingStatement struct {
+	Alias       *TypeAlias        `"using" (@@`
+	Declaration *UsingDeclaration "| @@"
+	Directive   *UsingDirective   `| @@) ";"`
+}
+
+type Declaration struct {
+	VarDec   *VariableDeclaration "@@"
+	ClassDec *ClassDeclaration    "| @@"
+}
+
+type NamespaceDef struct {
+	Name  string        `"namespace" @Ident "{"`
+	Items []Declaration `@@* "}"`
+}
+
+type Include struct {
+	Angled *string `"#include" @Angled @LineComment?`
+	Quoted *string `| "#include" @String @LineComment?`
+}
+
+type Preprocessor struct {
+	Include *IncludeDirective `@Preprocessor (@@`
+	Other   *string           `| @OtherPreprocessor`
+	EOL     *string           `) @ExitPreprocessor`
+}
+*/
+
+// https://en.cppreference.com/w/cpp/language/namespace.html#Using-directives
+// eg.
+// using namespace std;
+type UsingDirective struct {
+	Namespace string `"using" "namespace" (@NamespaceAccess? (@Ident @NamespaceAccess)* @Ident) ";"`
+}
+
+type QuotedIncludeDirective struct {
+	IncludedFile string `@QuotedInclude`
+}
+
+type AngledIncludeDirective struct {
+	IncludedFile string `@AngledInclude`
+}
+
+type IncludeDirective struct {
+	Quoted *string `"#include" (@String`
+	Angled *string `| @AngledInclude) @EOL`
+}
+
+type Preprocessor struct {
+	_Enter string   `@PreprocessorStart `
+	_Token string   `@Word`
+	Tokens []string `(@PreprocessorToken|@Whitespace)*`
+
+	_Exit string `@EOL`
+}
+
+type Statement struct {
+	Include             *IncludeDirective `@@`
+	IgnoredPreprocessor *string           `| @PreprocessorLine`
+	Using               *UsingDirective   `| @@`
+	Blank               *string           `| @BlankLine`
+	// Preprocessor        *Preprocessor     `| @@`
+}
+
+type File struct {
+	Statements []Statement `@@*`
+}
+
+var (
+	def = lexer.MustStateful(lexer.Rules{
+		"Root": {
+			{"Include", `#include\s+`, nil},
+			{"Namespace", `namespace`, nil},
+			{"Using", `using`, nil},
+			lexer.Include("Comment"),
+			{"BlankLine", `^\n$`, nil},
+			{"PreprocessorLine", `#[^\n]+[\n\r]+`, nil},
+			{"String", `"(?:[^"\\]|\\.)*"`, nil},
+			{"NamespaceAccess", "::", nil},
+			{"Semi", `;`, nil},
+			{"Ident", "[a-zA-Z_][_a-zA-Z0-9]*", nil},
+			{"Word", `[a-zA-Z0-9_]+`, nil},
+			{"Whitespace", `\s+`, nil},
+			{"AngledInclude", `<(?:[^>\\]|\\.)*>`, nil},
+			{"EOL", `\s*[\r\n]`, lexer.Pop()},
+			{"IgnorableWhitespace", `[ \t\r\n]+`, nil},
+		},
+		/*
+			"Preprocessor": {
+				lexer.Include("Comment"),
+				{"Word", `[a-zA-Z0-9_]+`, nil},
+				{"EOL", `\s*[\r\n]`, lexer.Pop()},
+				{"String", `"(?:[^"\\]|\\.)*"`, nil},
+				{"Whitespace", `\s+`, nil},
+				{"PreprocessorToken", `\S+\s*`, nil},
+			},
+		*/
+		"Comment": {
+			{"LineComment", `\s*//.*`, nil},
+			{"BlockComment", `\s*/\*[\s\S\n\r]*?\*/`, nil},
+		},
+		"Using": {
+			{"Whitespace", `\s+`, nil},
+			{"Ident", "[a-zA-Z_][_a-zA-Z0-9]*", nil},
+			{"UsingNamespace", ";", lexer.Pop()},
+		},
+	})
+	parser = participle.MustBuild[File](
+		participle.Lexer(def),
+		// participle.Unquote("String", "Angled"),
+		participle.Elide("BlankLine", "LineComment", "BlockComment", "IgnorableWhitespace"),
+		// participle.Map(func(token lexer.Token) (lexer.Token, error) {
+		// 	token.Value = strings.Replace(token.Value, "#include", "", -1)
+		// 	token.Value = strings.Replace(token.Value, `"`, "", -1)
+		// 	token.Value = strings.Replace(token.Value, `<`, "", -1)
+		// 	token.Value = strings.Replace(token.Value, `>`, "", -1)
+		// 	token.Value = strings.Replace(token.Value, ` `, "", -1)
+		// 	return token, nil
+		// }, "QuotedInclude", "AngledInclude"),
+	)
+)
+
+/*
+	{"AngledInclude", `#include\s+<[^<]+>`},
+
+	// {"BadPreprocessor", "^#([^i]|i[^n]|in[^c]|inc[^l]|incl[^u]|inclu[^d]|includ[^e])"},
+	// {"Pragma", "#pragma.*\n"},
+	// {"Define", "#define.*\n"},
+	// {"BadLine", "^[^#].*\n"},
+	// {"EmptyLine", "^\n$"},
+	// {"Brother", "[^\n]+"},
+	// {"KeyWord", "(const|export|import|using|namespace|class|struct)"},
+	// {"Punctuation", `[,\.\{\}=\(\)&]`},
+	// {"Semi", `;`},
+	// {"Ident", `[a-zA-Z]+`},
+	// {"Newline", `[\n\r]+`},
+	// {"Ident", `([_a-zA-Z][a-zA-Z0-9]*::)*[_a-zA-Z0-9]+`},
+	{"LineComment", `//[^\r\n]*`},
+*/
+//			{"BlockComment", `/\*(.|\n)+\*/`},
+
+/*
+	{"Whitespace", `\s+`},
+	{"Other", `.+`},
+*/

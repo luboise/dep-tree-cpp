@@ -18,14 +18,14 @@ func TestParser(t *testing.T) {
 			Name:  "Quoted Include",
 			Input: `#include "file.h"`,
 			Statements: []Statement{{
-				Quoted: &QuotedInclude{"file.h"},
+				QuotedInclude: &QuotedInclude{"file.h"},
 			}},
 		},
 		{
 			Name:  "Angled Include",
 			Input: `#include <vector>`,
 			Statements: []Statement{{
-				Angled: &AngledInclude{"vector"},
+				AngledInclude: &AngledInclude{"vector"},
 			}},
 		},
 		{
@@ -116,10 +116,10 @@ ImagePtr LoadImage(const AssetArg& path, Presto::string name = "");
 			File: "multi_includes.h",
 			Expected: []Statement{
 				{
-					Quoted: &QuotedInclude{"file.h"},
+					QuotedInclude: &QuotedInclude{"file.h"},
 				},
 				{
-					Angled: &AngledInclude{"vector"},
+					AngledInclude: &AngledInclude{"vector"},
 				}},
 		},
 	}

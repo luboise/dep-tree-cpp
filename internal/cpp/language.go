@@ -126,13 +126,19 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 	}
 
 	for _, statement := range file.Content.([]Statement) {
+		// Skip non-preprocessor directives
+		if statement.Include == nil {
+			continue
+		}
+
+		var include = statement.Include
 
 		var includePath string = ""
 
-		if statement.Quoted != nil {
-			includePath = statement.Quoted.IncludedFile
-		} else if statement.Angled != nil {
-			includePath = statement.Angled.IncludedFile
+		if include.Quoted != nil {
+			includePath = *include.Quoted
+		} else if include.Angled != nil {
+			includePath = *include.Angled
 		} else {
 			continue
 		}
@@ -165,7 +171,7 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 
 		/*
 			 else if statement.Angled != nil {
-					var path = statement.Angled.IncludedFile
+					var path = *statement.Angled
 
 					var absPath string = ""
 					for _, includePath := range l.Cfg.IncludePaths {
@@ -201,11 +207,18 @@ func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResul
 	}
 
 	for _, statement := range file.Content.([]Statement) {
+
+		if statement.Include == nil {
+			continue
+		}
+
+		var include = statement.Include
+
 		var path string = ""
-		if statement.Quoted != nil {
-			path = statement.Quoted.IncludedFile
-		} else if statement.Angled != nil {
-			path = statement.Angled.IncludedFile
+		if include.Quoted != nil {
+			path = *include.Quoted
+		} else if include.Angled != nil {
+			path = *include.Angled
 		}
 		if len(path) == 0 {
 			continue
@@ -216,14 +229,14 @@ func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResul
 		})
 		/*
 			if statement.Quoted != nil {
-				var header = statement.Quoted.IncludedFile
+				var header = *statement.Quoted
 
 				result.Exports = append(result.Exports, language.ExportEntry{
 					Symbols: []language.ExportSymbol{{Original: header}},
 					AbsPath: file.AbsPath,
 				})
 			} else if statement.Angled != nil {
-				var header = statement.Angled.IncludedFile
+				var header = *statement.Angled
 
 				result.Exports = append(result.Exports, language.ExportEntry{
 					Symbols: []language.ExportSymbol{{Original: header}},
