@@ -1,5 +1,6 @@
 package cpp
 
 type Config struct {
-	IncludePaths []string `yaml:"includePaths"`
+	RecursiveIncludePaths    []string `yaml:"recursiveIncludePaths"`
+	NonRecursiveIncludePaths []string `yaml:"nonRecursiveIncludePaths"`
 }

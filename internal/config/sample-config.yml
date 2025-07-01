@@ -127,8 +127,9 @@ rust:
   # None available at the moment.
 
 cpp:
-  includePaths:
-    - path1
-    - path2
-    - path3
-    - path4
+  recursiveIncludePaths:
+    #- ~/MyProject/include
+    #- ~/MyProject/external/ExternalProject/include
+  nonRecursiveIncludePaths:
+    #- /usr/include/c++/v1           # libc++ ABI for clang
+    #- /usr/include/c++/<version>/   #libstdc++ ABI for gcc
