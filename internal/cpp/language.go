@@ -82,6 +82,18 @@ func (l *Language) GetABSPath(includedPath string) (found bool, absPath string, 
 }
 
 func (l *Language) ParseFile(path string) (*language.FileInfo, error) {
+	currentDir, _ := os.Getwd()
+	relPath, _ := filepath.Rel(currentDir, path)
+
+	// If the file has an extension, and that extension is non-c++
+	ext := filepath.Ext(path)
+	if ext != "" && !slices.Contains(Extensions, ext[1:]) {
+		return &language.FileInfo{
+			Content: []Statement{},
+			Loc:     0, Size: 0, AbsPath: path, RelPath: relPath,
+		}, nil
+	}
+
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -90,8 +102,6 @@ func (l *Language) ParseFile(path string) (*language.FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	currentDir, _ := os.Getwd()
-	relPath, _ := filepath.Rel(currentDir, path)
 	return &language.FileInfo{
 		Content: file.Statements,                    // dump the parsed statements into the FileInfo struct.
 		Loc:     bytes.Count(content, []byte("\n")), // get the amount of lines of code.
@@ -103,6 +113,9 @@ func (l *Language) ParseFile(path string) (*language.FileInfo, error) {
 
 func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResult, error) {
 	var result language.ImportsResult
+	if file.AbsPath == "" {
+		return &result, nil
+	}
 
 	_, isRecursive, err := l.GetIncludePath(file.AbsPath)
 	if err != nil {
@@ -183,6 +196,9 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 
 func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResult, error) {
 	var result language.ExportsResult
+	if file.AbsPath == "" {
+		return &result, nil
+	}
 
 	for _, statement := range file.Content.([]Statement) {
 		var path string = ""
@@ -221,4 +237,5 @@ func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResul
 	return &result, nil
 }
 
-var Extensions = []string{"h", "cpp", "cppm", "ixx"}
+var Extensions = []string{"h", "hpp", "hh", // Header extensions
+	"cpp", "cxx", "C", "cc", "c++", "cppm", "ixx"} // Source extensions
