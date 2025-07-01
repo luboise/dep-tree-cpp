@@ -1,6 +1,8 @@
 package cpp
 
 import (
+	"strings"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -163,7 +165,6 @@ type File struct {
 var (
 	lex = lexer.MustSimple(
 		[]lexer.SimpleRule{
-			// {"Include", "#include"},
 			{"QuotedInclude", `#include\s+"[^"]+"`},
 			{"AngledInclude", `#include\s+<[^<]+>`},
 
@@ -191,6 +192,13 @@ var (
 		participle.Lexer(lex),
 		// participle.Unquote("String", "Angled"),
 		participle.Elide("LineComment", "BlockComment", "Whitespace", "Other"),
+		participle.Map(func(token lexer.Token) (lexer.Token, error) {
+			token.Value = strings.Replace(token.Value, "#include", "", -1)
+			token.Value = strings.Replace(token.Value, `"`, "", -1)
+			token.Value = strings.Replace(token.Value, `<`, "", -1)
+			token.Value = strings.Replace(token.Value, `>`, "", -1)
+			token.Value = strings.Replace(token.Value, ` `, "", -1)
+			return token, nil
+		}, "QuotedInclude", "AngledInclude"),
 	)
 )
-

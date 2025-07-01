@@ -1,5 +1,5 @@
 package cpp
 
 type Config struct {
-	IncludePaths []string
+	IncludePaths []string `yaml:"includePaths"`
 }

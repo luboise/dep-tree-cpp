@@ -62,19 +62,20 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 					continue
 				}
 
-				var found = false
+				var absPath string = ""
 				for _, includePath := range l.Cfg.IncludePaths {
-					var absPath = filepath.Join(includePath, path)
+					var innerAbsPath = filepath.Join(includePath, path)
 
-					if _, err := os.Stat(absPath); errors.Is(err, os.ErrNotExist) {
+					if _, err := os.Stat(innerAbsPath); errors.Is(err, os.ErrNotExist) {
 						continue
 					}
 
-					fmt.Println("Found included path ", path, "at absolute location ", absPath)
-					found = true
+					fmt.Println("Found included path ", path, "at absolute location ", innerAbsPath)
+					absPath = innerAbsPath
 					break
 				}
-				if !found {
+
+				if len(absPath) == 0 {
 					fmt.Println("Unable to find included path: ", path)
 					continue
 				}
@@ -82,7 +83,7 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 				result.Imports = append(result.Imports, language.ImportEntry{
 					// TODO: Get the symbols from the other file instead of using the header file
 					Symbols: []string{path},
-					AbsPath: filepath.Join(filepath.Dir(file.AbsPath), path),
+					AbsPath: absPath,
 				})
 			}
 		} else if statement.Angled != nil {
