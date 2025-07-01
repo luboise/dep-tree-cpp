@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/gabotechs/dep-tree/internal/cpp"
 	"github.com/gabotechs/dep-tree/internal/utils"
 	"gopkg.in/yaml.v3"
 
@@ -33,6 +34,7 @@ type Config struct {
 	Rust          rust.Config   `yaml:"rust"`
 	Python        python.Config `yaml:"python"`
 	Golang        golang.Config `yaml:"golang"`
+	Cpp           cpp.Config    `yaml:"cpp"`
 }
 
 func NewConfigCwd() Config {

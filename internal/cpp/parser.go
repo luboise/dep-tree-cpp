@@ -150,16 +150,12 @@ type NamespaceDef struct {
 	Items []Declaration `@@* "}"`
 }
 
+/*
 type Include struct {
-	Token  string  `"#include"`
-	Angled *string `@Angled?`
-	Quoted *string `@String?`
+	Angled *string `"#include" @Angled @LineComment?`
+	Quoted *string `| "#include" @String @LineComment?`
 }
-
-type Statement struct {
-	Include *Include `@@ "@Brother"?`
-	// Empty   bool     `| (@Semi|"\n")` // Accept empty statements
-}
+*/
 
 type QuotedInclude struct {
 	IncludedFile string `"#include" @String`
@@ -167,6 +163,12 @@ type QuotedInclude struct {
 
 type AngledInclude struct {
 	IncludedFile string `"#include" @Angled`
+}
+
+type Statement struct {
+	Quoted *QuotedInclude `@@ "@Brother"?`
+	Angled *AngledInclude `| @@ "@Brother"?`
+	// Empty   bool     `| (@Semi|"\n")` // Accept empty statements
 }
 
 var (
@@ -197,6 +199,7 @@ var (
 	parser = participle.MustBuild[File](
 		participle.Lexer(lex),
 		participle.Unquote("String", "Angled"),
-		participle.Elide("BadPreprocessor", "BadLine", "Define", "EmptyLine", "LineComment", "BlockComment", "Newline", "Whitespace", "Pragma"),
+		participle.Elide("LineComment", "BadPreprocessor", "BadLine", "Define", "EmptyLine", "BlockComment", "Newline", "Whitespace", "Pragma"),
 	)
 )
+

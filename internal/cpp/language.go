@@ -2,13 +2,22 @@ package cpp
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gabotechs/dep-tree/internal/language"
 )
 
-type Language struct{}
+type Language struct {
+	Cfg *Config
+}
+
+func MakeCppLanguage(cfg *Config) (language.Language, error) {
+	return &Language{Cfg: cfg}, nil
+}
 
 func (l *Language) ParseFile(path string) (*language.FileInfo, error) {
 	content, err := os.ReadFile(path)
@@ -34,19 +43,56 @@ func (l *Language) ParseImports(file *language.FileInfo) (*language.ImportsResul
 	var result language.ImportsResult
 
 	for _, statement := range file.Content.([]Statement) {
-		if statement.Include != nil {
-			if statement.Include.Quoted != nil {
+		fmt.Println("Found include: ", statement)
+
+		if statement.Quoted != nil {
+			fmt.Println("Found quoted: ", statement.Quoted)
+			var path = *&statement.Quoted.IncludedFile
+
+			if strings.HasPrefix(path, ".") {
+				fmt.Println("FOUND A RELATIVE IMPORT")
+				result.Imports = append(result.Imports, language.ImportEntry{
+					Symbols: []string{path},
+					AbsPath: filepath.Join(filepath.Dir(file.AbsPath), path),
+				})
+			} else {
+				fmt.Println("FOUND AN ABSOLUTE IMPORT")
+				if l.Cfg == nil {
+					fmt.Println("NO CONFIG FOUND")
+					continue
+				}
+
+				var found = false
+				for _, includePath := range l.Cfg.IncludePaths {
+					var absPath = filepath.Join(includePath, path)
+
+					if _, err := os.Stat(absPath); errors.Is(err, os.ErrNotExist) {
+						continue
+					}
+
+					fmt.Println("Found included path ", path, "at absolute location ", absPath)
+					found = true
+					break
+				}
+				if !found {
+					fmt.Println("Unable to find included path: ", path)
+					continue
+				}
+
 				result.Imports = append(result.Imports, language.ImportEntry{
 					// TODO: Get the symbols from the other file instead of using the header file
-					Symbols: []string{*statement.Include.Quoted},
-					AbsPath: filepath.Join(filepath.Dir(file.AbsPath), *statement.Include.Quoted),
+					Symbols: []string{path},
+					AbsPath: filepath.Join(filepath.Dir(file.AbsPath), path),
 				})
 			}
-		} else if statement.Include.Angled != nil {
+		} else if statement.Angled != nil {
+			var path = statement.Angled.IncludedFile
+
+			fmt.Println("Found angled")
 			result.Imports = append(result.Imports, language.ImportEntry{
 				// TODO: Get the symbols from the other file instead of using the header file
-				Symbols: []string{*statement.Include.Angled},
-				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), *statement.Include.Angled),
+				Symbols: []string{path},
+				AbsPath: filepath.Join(filepath.Dir(file.AbsPath), path),
 			})
 		}
 	}
@@ -58,15 +104,21 @@ func (l *Language) ParseExports(file *language.FileInfo) (*language.ExportsResul
 	var result language.ExportsResult
 
 	for _, statement := range file.Content.([]Statement) {
-		if statement.Include != nil {
-			if statement.Include.Quoted != nil {
+		if statement.Quoted != nil {
+			var header = statement.Quoted.IncludedFile
 
-				result.Exports = append(result.Exports, language.ExportEntry{
-					Symbols: []language.ExportSymbol{{Original: *statement.Include.Angled}},
-					AbsPath: file.AbsPath,
-				})
+			result.Exports = append(result.Exports, language.ExportEntry{
+				Symbols: []language.ExportSymbol{{Original: header}},
+				AbsPath: file.AbsPath,
+			})
+		} else if statement.Angled != nil {
+			var header = statement.Angled.IncludedFile
 
-			}
+			result.Exports = append(result.Exports, language.ExportEntry{
+				Symbols: []language.ExportSymbol{{Original: header}},
+				AbsPath: file.AbsPath,
+			})
+
 		}
 	}
 
