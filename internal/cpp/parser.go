@@ -14,6 +14,16 @@ type ClassFwd struct {
 	Name string `"class" @Ident ";"`
 }
 
+type FunctionArgument struct {
+	IsConst bool `"const"?`
+	IsConst bool `"const"?`
+}
+
+type FunctionDeclaration struct {
+	LeadingReturnType TypeName `@@`
+	Name              string   `@Ident "("`
+}
+
 type UsingDirective struct {
 	Namespace string `"namespace" @Ident ("::" @Ident)* ";"`
 }
