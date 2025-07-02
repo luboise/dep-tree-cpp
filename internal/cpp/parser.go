@@ -46,17 +46,33 @@ type DestructorDeclaration struct {
 	IsVirtual      bool      `"virtual"?`
 	Name           string    `"~" @Ident "(" ")"`
 	PostSpecifiers []*string `("override"|"const")*`
-	IsPureVirtual  bool      `(@PureVirtualToken)? ";"`
+
+	Definition    []*FunctionStatement `(( "{" @@* "}" ) |`
+	IsPureVirtual bool                 `@PureVirtualToken ";")?`
+}
+
+/*
+type ReturnStatement struct {
+	Value *Expr `"return" @@ ";"`
+}
+*/
+
+type FunctionStatement struct {
+	Return  *Expr      `("return" @@ ";")`
+	General *Statement `| @@`
 }
 
 type FunctionDeclaration struct {
-	Qualifiers         []*string            `(("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")|("constexpr"|"virtual"|"explicit"))*`
-	LeadingReturnType  *QualifiedTypeName   `@@?`
-	Name               string               `@Ident`
-	Parameters         []*FunctionParameter `"(" (@@ ("," @@)*)? ")"`
-	PostSpecifiers     []*string            `("override"|"const")*`
-	TrailingReturnType *string              `("->" @Ident)?`
-	IsPureVirtual      bool                 `(@PureVirtualToken)? ";"`
+	Qualifiers        []*string            `(("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")|("constexpr"|"virtual"|"explicit"))*`
+	LeadingReturnType *QualifiedTypeName   `@@?`
+	Name              string               `@Ident`
+	Parameters        []*FunctionParameter `"(" (@@ ("," @@)*)? ")"`
+	PostSpecifiers    []*string            `("override"|"const")*`
+	// TrailingReturnType *string              `("->" @Ident)?`
+	TrailingReturnType *QualifiedTypeName `("->" @@)?`
+
+	Definition    []*FunctionStatement `(( "{" @@* "}" ) |`
+	IsPureVirtual bool                 `@PureVirtualToken ";")?`
 }
 
 type UsingDirective struct {
@@ -135,6 +151,7 @@ var (
 
 			{"Class", `class\b`, nil},
 			{"Friend", `friend\b`, nil},
+			{"Return", `return\b`, nil},
 			{"AccessSpecifier", `"public"|"private"`, nil},
 
 			{"PureVirtualToken", `=\s+0`, nil},
