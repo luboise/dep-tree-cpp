@@ -26,18 +26,40 @@ type UsingDeclaration struct {
 	Tokens []TypeName `@@ ("," @@)* ";"`
 }
 
-type TypeName struct {
-	Name string `@NamespaceAccess? @Ident (@NamespaceAccess @Ident)*`
+type TemplatedType struct {
+	Types []TypeName `"<" @@ ("," @@)* ">"`
 }
+
+/*
+type TypeName struct {
+	Name string `@NamespaceAccess? @Ident ((@NamespaceAccess @Ident))*`
+}
+
+type TypeName struct {
+	Name            string    `@NamespaceAccess? @Ident`
+	NamespaceAccess *TypeName `((@NamespaceAccess @Ident)|`
+	TemplateType    *TypeName `(@NamespaceAccess @Ident))?`
+}
+*/
 
 type TypeAlias struct {
 	Alias string   `@Ident "="`
 	Type  TypeName `@@ ";"`
 }
 
+type TypeFragment struct {
+	NamespaceAccess *string     `"::"`
+	Identifier      *string     `| @Ident`
+	TemplatedType   []*TypeName `| ("<" @@ (","@@)* ">")`
+}
+
+type TypeName struct {
+	Fragments []TypeFragment `@@+`
+}
+
 type IncludeDirective struct {
 	Quoted *string `"#" "include" (@String`
-	Angled *string `| @AngledInclude)`
+	Angled *string `| (@AngledL @Ident @AngledR))`
 }
 
 type UsingStatement struct {
@@ -72,7 +94,7 @@ var (
 			{"Include", `include\b`, nil},
 
 			{"String", `"(?:[^"\\]|\\.)*"`, nil},
-			{"AngledInclude", `<[^>\r\n]*>`, nil},
+			// {"AngledInclude", `<[^>\r\n]*>`, nil},
 
 			{"NamespaceAccess", `::`, nil},
 			{"Equals", `=`, nil},
