@@ -125,6 +125,17 @@ type UsingStatement struct {
 	TypeAlias        *TypeAlias        `| @@)`
 }
 
+type TemplateTypename struct {
+	Keyword  *string   `(("typename"|"class")`
+	Typename *TypeName `| @@)`
+	Name     string    `@Ident`
+}
+
+type TemplateDeclaration struct {
+	TypeNames []*TemplateTypename `"template" "<" @@ ("," @@)* ">"`
+	Statement Statement           `@@`
+}
+
 type Statement struct {
 	Include             *IncludeDirective    `@@`
 	IgnoredPreprocessor *string              `| @PreprocessorLine`
@@ -133,6 +144,7 @@ type Statement struct {
 	ClassDec            *ClassDec            `| @@`
 	EmptyStatement      *string              `| @Semi`
 	FunctionDeclaration *FunctionDeclaration `| @@`
+	TemplateDeclaration *TemplateDeclaration `| @@`
 }
 
 type File struct {
@@ -158,6 +170,7 @@ var (
 
 			{"Using", `using\b`, nil},
 			{"Namespace", `namespace\b`, nil},
+			{"Template", `template\b`, nil},
 			{"Include", `include\b`, nil},
 
 			{"String", `"(?:[^"\\]|\\.)*"`, nil},
