@@ -5,9 +5,19 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
+type FunctionName struct {
+	Name TypeName `@@`
+}
+
+type FunctionCall struct {
+	Name       FunctionName `@@`
+	Parameters []*Expr      `"(" (@@ ("," @@)*)? ")"`
+}
+
 type Expr struct {
-	String     *string `@String`
-	Identifier *string `| @Ident`
+	String       *string       `@String`
+	FunctionCall *FunctionCall `| @@`
+	Identifier   *string       `| @Ident`
 }
 
 type NamespaceDef struct {
@@ -97,8 +107,8 @@ type TypeAlias struct {
 }
 
 type TypeExtensionFragment struct {
-	NamespaceAccess *string     `("::" @Ident)`
-	TemplatedType   []*TypeName `| ("<" @@ (","@@)* ">")`
+	NamespaceAccess *string              `("::" @Ident)`
+	TemplatedType   []*QualifiedTypeName `| ("<" @@ (","@@)* ">")`
 }
 
 type QualifiedTypeName struct {
@@ -162,6 +172,7 @@ var (
 			{"PreprocessorLine", `#[^\r\n]*`, nil},
 
 			{"Class", `class\b`, nil},
+			{"Typename", `typename\b`, nil},
 			{"Friend", `friend\b`, nil},
 			{"Return", `return\b`, nil},
 			{"AccessSpecifier", `"public"|"private"`, nil},
