@@ -6,7 +6,8 @@ import (
 )
 
 type Expr struct {
-	String *string `@String`
+	String     *string `@String`
+	Identifier *string `| @Ident`
 }
 
 type NamespaceDef struct {
@@ -14,8 +15,15 @@ type NamespaceDef struct {
 	Statements []Statement `"{" "\n"? @@* "}"`
 }
 
-type ClassFwd struct {
-	Name string `"class" @Ident ";"`
+type ClassStatement struct {
+	Statement       *Statement `@@`
+	AccessSpecifier *string    `| ("public"|"private") ":"`
+}
+
+type ClassDec struct {
+	IsFriend bool              `"friend"?`
+	Name     string            `"class" @Ident`
+	Body     []*ClassStatement `("{" @@+ "}")? ";"`
 }
 
 type FunctionParameter struct {
@@ -27,7 +35,7 @@ type FunctionParameter struct {
 type FunctionDeclaration struct {
 	Qualifiers []*string `("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")*`
 	// Qualifiers        []*string            `(("[[" @FunctionQualifier ("(" @String ")") "]]")|@FunctionQualifier)*`
-	LeadingReturnType TypeName             `@@`
+	LeadingReturnType *TypeName            `@@?`
 	Name              string               `@Ident`
 	Parameters        []*FunctionParameter `"(" (@@ ("," @@)*)? ")" ";"`
 }
@@ -87,7 +95,7 @@ type Statement struct {
 	IgnoredPreprocessor *string              `| @PreprocessorLine`
 	Namespace           *NamespaceDef        `| @@`
 	Using               *UsingStatement      `| @@`
-	ClassDef            *ClassFwd            `| @@`
+	ClassDec            *ClassDec            `| @@`
 	EmptyStatement      *string              `| @Semi`
 	FunctionDeclaration *FunctionDeclaration `| @@`
 }
@@ -106,6 +114,8 @@ var (
 			{"PreprocessorLine", `#[^\r\n]*`, nil},
 
 			{"Class", `class\b`, nil},
+			{"Friend", `friend\b`, nil},
+			{"AccessSpecifier", `"public"|"private"`, nil},
 
 			{"Using", `using\b`, nil},
 			{"Namespace", `namespace\b`, nil},
@@ -117,6 +127,7 @@ var (
 			{"NamespaceAccess", `::`, nil},
 			{"Equals", `=`, nil},
 			{"Semi", `;`, nil},
+			{"Colon", `:`, nil},
 			{"Comma", `,`, nil},
 			{"Hash", `#`, nil},
 			{"AngledL", `<`, nil},
