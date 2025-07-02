@@ -74,6 +74,7 @@ type Statement struct {
 	Namespace           *NamespaceDef     `| @@`
 	Using               *UsingStatement   `| @@`
 	ClassDef            *ClassFwd         `| @@`
+	EmptyStatement      *string           `| @Semi`
 }
 
 type File struct {
