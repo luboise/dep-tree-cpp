@@ -5,17 +5,31 @@ import (
 	"github.com/alecthomas/participle/v2/lexer"
 )
 
+type NamespaceDef struct {
+	Name       *TypeName   `"namespace" @@`
+	Statements []Statement `"{" "\n"? @@* "}"`
+}
+
+type ClassFwd struct {
+	Name string `"class" @Ident ";"`
+}
+
 type UsingDirective struct {
 	Namespace string `"using" "namespace" @Ident ("::" @Ident)* ";"`
+}
+
+type TypeName struct {
+	Name string `@NamespaceAccess? @Ident (@NamespaceAccess @Ident)*`
+}
+
+type TypeAlias struct {
+	Alias string   `"using" @Ident "="`
+	Type  TypeName `@@ ";"`
 }
 
 type IncludeDirective struct {
 	Quoted *string `"#" "include" (@String`
 	Angled *string `| @AngledInclude)`
-}
-
-type TypeName struct {
-	Name string `@NamespaceAccess? @Ident (@NamespaceAccess @Ident)*`
 }
 
 // https://en.cppreference.com/w/cpp/language/namespace.html#Using-declarations
@@ -29,8 +43,11 @@ type UsingDeclaration struct {
 type Statement struct {
 	Include             *IncludeDirective `@@`
 	IgnoredPreprocessor *string           `| @PreprocessorLine`
+	Namespace           *NamespaceDef     `| @@`
 	UsingDirective      *UsingDirective   `| @@`
 	UsingDec            *UsingDeclaration `| @@`
+	TypeAlias           *TypeAlias        `| @@`
+	ClassDef            *ClassFwd         `| @@`
 }
 
 type File struct {
@@ -44,6 +61,8 @@ var (
 
 			{"PreprocessorLine", `#[^\r\n]*`, nil},
 
+			{"Class", `class\b`, nil},
+
 			{"Using", `using\b`, nil},
 			{"Namespace", `namespace\b`, nil},
 			{"Include", `include\b`, nil},
@@ -52,9 +71,15 @@ var (
 			{"AngledInclude", `<[^>\r\n]*>`, nil},
 
 			{"NamespaceAccess", `::`, nil},
+			{"Equals", `=`, nil},
 			{"Semi", `;`, nil},
 			{"Comma", `,`, nil},
 			{"Hash", `#`, nil},
+			{"AngledL", `<`, nil},
+			{"AngledR", `>`, nil},
+
+			{"CurlyOpen", `{`, nil},
+			{"CurlyClose", `}`, nil},
 
 			{"Ident", `[a-zA-Z_][a-zA-Z0-9_]*`, nil},
 
