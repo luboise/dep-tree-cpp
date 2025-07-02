@@ -35,21 +35,28 @@ type FunctionParameter struct {
 }
 
 type ConstructorDeclaration struct {
-	IsExplicit bool                 `"explicit"?`
-	Name       string               `@Ident`
-	Parameters []*FunctionParameter `"(" (@@ ("," @@)*)? ")" ";"`
+	IsExplicit     bool                 `"explicit"?`
+	Qualifiers     []*string            `("constexpr"|"virtual"|"explicit")*`
+	Name           string               `@Ident`
+	Parameters     []*FunctionParameter `"(" (@@ ("," @@)*)? ")"`
+	PostSpecifiers []*string            `("override"|"const")* ";"`
 }
 
 type DestructorDeclaration struct {
-	IsVirtual bool   `"virtual"?`
-	Name      string `"~" @Ident "(" ")" ";"`
+	IsVirtual      bool      `"virtual"?`
+	Name           string    `"~" @Ident "(" ")"`
+	PostSpecifiers []*string `("override"|"const")*`
+	IsPureVirtual  bool      `(@PureVirtualToken)? ";"`
 }
 
 type FunctionDeclaration struct {
-	Qualifiers        []*string            `(("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")|("constexpr"|"virtual"|"explicit"))*`
-	LeadingReturnType *QualifiedTypeName   `@@?`
-	Name              string               `@Ident`
-	Parameters        []*FunctionParameter `"(" (@@ ("," @@)*)? ")" ";"`
+	Qualifiers         []*string            `(("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")|("constexpr"|"virtual"|"explicit"))*`
+	LeadingReturnType  *QualifiedTypeName   `@@?`
+	Name               string               `@Ident`
+	Parameters         []*FunctionParameter `"(" (@@ ("," @@)*)? ")"`
+	PostSpecifiers     []*string            `("override"|"const")*`
+	TrailingReturnType *string              `("->" @Ident)?`
+	IsPureVirtual      bool                 `(@PureVirtualToken)? ";"`
 }
 
 type UsingDirective struct {
@@ -130,12 +137,17 @@ var (
 			{"Friend", `friend\b`, nil},
 			{"AccessSpecifier", `"public"|"private"`, nil},
 
+			{"PureVirtualToken", `=\s+0`, nil},
+
 			{"Using", `using\b`, nil},
 			{"Namespace", `namespace\b`, nil},
 			{"Include", `include\b`, nil},
 
 			{"String", `"(?:[^"\\]|\\.)*"`, nil},
+			{"Integer", `(0[xb]?)? [0-9]+ [ulUL]?`, nil},
 			// {"AngledInclude", `<[^>\r\n]*>`, nil},
+
+			{"PointerAccess", "->", nil},
 
 			{"NamespaceAccess", `::`, nil},
 			{"Equals", `=`, nil},
