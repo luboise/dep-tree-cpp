@@ -16,8 +16,10 @@ type NamespaceDef struct {
 }
 
 type ClassStatement struct {
-	Statement       *Statement `@@`
-	AccessSpecifier *string    `| ("public"|"private") ":"`
+	Destructor      *DestructorDeclaration  `@@`
+	Constructor     *ConstructorDeclaration `| @@`
+	Statement       *Statement              `| @@`
+	AccessSpecifier *string                 `| ("public"|"private") ":"`
 }
 
 type ClassDec struct {
@@ -32,10 +34,20 @@ type FunctionParameter struct {
 	Value *Expr              `(("=" @@) | ("{" @@ "}"))?`
 }
 
+type ConstructorDeclaration struct {
+	IsExplicit bool                 `"explicit"?`
+	Name       string               `@Ident`
+	Parameters []*FunctionParameter `"(" (@@ ("," @@)*)? ")" ";"`
+}
+
+type DestructorDeclaration struct {
+	IsVirtual bool   `"virtual"?`
+	Name      string `"~" @Ident "(" ")" ";"`
+}
+
 type FunctionDeclaration struct {
-	Qualifiers []*string `("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")*`
-	// Qualifiers        []*string            `(("[[" @FunctionQualifier ("(" @String ")") "]]")|@FunctionQualifier)*`
-	LeadingReturnType *TypeName            `@@?`
+	Qualifiers        []*string            `(("[" "[" ("nodiscard"|"deprecated") ("(" @String ")")? "]" "]")|("constexpr"|"virtual"|"explicit"))*`
+	LeadingReturnType *QualifiedTypeName   `@@?`
 	Name              string               `@Ident`
 	Parameters        []*FunctionParameter `"(" (@@ ("," @@)*)? ")" ";"`
 }
@@ -110,6 +122,7 @@ var (
 			lexer.Include("Comment"),
 
 			{"FunctionQualifier", `"nodiscard"|"deprecated"`, nil},
+			{"FunctionKeyword", `"constexpr"|"virtual"|"explicit"`, nil},
 
 			{"PreprocessorLine", `#[^\r\n]*`, nil},
 
@@ -129,6 +142,7 @@ var (
 			{"Semi", `;`, nil},
 			{"Colon", `:`, nil},
 			{"Comma", `,`, nil},
+			{"Tilde", `\~`, nil},
 			{"Hash", `#`, nil},
 			{"AngledL", `<`, nil},
 			{"AngledR", `>`, nil},
