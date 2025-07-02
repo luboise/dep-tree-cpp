@@ -43,13 +43,24 @@ type FunctionParameter struct {
 	Name  *string            `@Ident?`
 	Value *Expr              `(("=" @@) | ("{" @@ "}"))?`
 }
+type FunctionStatement struct {
+	Return  *Expr      `("return" @@ ";")`
+	General *Statement `| @@`
+}
+
+type FunctionEnd struct {
+	Definition    []*FunctionStatement `( "{" @@* "}" ) |`
+	AltDefinition *string              `(("=" ("0" | "delete"))? ";")`
+}
 
 type ConstructorDeclaration struct {
 	IsExplicit     bool                 `"explicit"?`
 	Qualifiers     []*string            `("constexpr"|"virtual"|"explicit")*`
 	Name           string               `@Ident`
 	Parameters     []*FunctionParameter `"(" (@@ ("," @@)*)? ")"`
-	PostSpecifiers []*string            `("override"|"const")* ";"`
+	PostSpecifiers []*string            `("override"|"const")*`
+
+	FunctionEnd *FunctionEnd `@@`
 }
 
 type DestructorDeclaration struct {
@@ -57,19 +68,7 @@ type DestructorDeclaration struct {
 	Name           string    `"~" @Ident "(" ")"`
 	PostSpecifiers []*string `("override"|"const")*`
 
-	Definition    []*FunctionStatement `(( "{" @@* "}" ) |`
-	IsPureVirtual bool                 `@PureVirtualToken ";")?`
-}
-
-/*
-type ReturnStatement struct {
-	Value *Expr `"return" @@ ";"`
-}
-*/
-
-type FunctionStatement struct {
-	Return  *Expr      `("return" @@ ";")`
-	General *Statement `| @@`
+	FunctionEnd *FunctionEnd `@@`
 }
 
 type FunctionDeclaration struct {
@@ -81,8 +80,7 @@ type FunctionDeclaration struct {
 	// TrailingReturnType *string              `("->" @Ident)?`
 	TrailingReturnType *QualifiedTypeName `("->" @@)?`
 
-	Definition    []*FunctionStatement `(( "{" @@* "}" ) |`
-	IsPureVirtual bool                 `@PureVirtualToken ";")?`
+	FunctionEnd *FunctionEnd `@@`
 }
 
 type UsingDirective struct {
@@ -172,12 +170,12 @@ var (
 			{"PreprocessorLine", `#[^\r\n]*`, nil},
 
 			{"Class", `class\b`, nil},
+			{"Delete", `delete\b`, nil},
 			{"Typename", `typename\b`, nil},
 			{"Friend", `friend\b`, nil},
 			{"Return", `return\b`, nil},
 			{"AccessSpecifier", `"public"|"private"`, nil},
-
-			{"PureVirtualToken", `=\s+0`, nil},
+			{"Zero", "0", nil},
 
 			{"Using", `using\b`, nil},
 			{"Namespace", `namespace\b`, nil},
