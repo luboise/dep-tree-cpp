@@ -15,7 +15,15 @@ type ClassFwd struct {
 }
 
 type UsingDirective struct {
-	Namespace string `"using" "namespace" @Ident ("::" @Ident)* ";"`
+	Namespace string `"namespace" @Ident ("::" @Ident)* ";"`
+}
+
+// https://en.cppreference.com/w/cpp/language/namespace.html#Using-declarations
+// eg.
+// using std::vector, std::string, mynamespace::foo, mynamespace::bar;
+type UsingDeclaration struct {
+	// Tokens []string `@Ident ("," @Ident)*`
+	Tokens []TypeName `@@ ("," @@)* ";"`
 }
 
 type TypeName struct {
@@ -23,7 +31,7 @@ type TypeName struct {
 }
 
 type TypeAlias struct {
-	Alias string   `"using" @Ident "="`
+	Alias string   `@Ident "="`
 	Type  TypeName `@@ ";"`
 }
 
@@ -32,21 +40,17 @@ type IncludeDirective struct {
 	Angled *string `| @AngledInclude)`
 }
 
-// https://en.cppreference.com/w/cpp/language/namespace.html#Using-declarations
-// eg.
-// using std::vector, std::string, mynamespace::foo, mynamespace::bar;
-type UsingDeclaration struct {
-	// Tokens []string `@Ident ("," @Ident)*`
-	Tokens []TypeName `"using" @@ ("," @@)* ";"`
+type UsingStatement struct {
+	UsingDirective   *UsingDirective   `"using" (@@`
+	UsingDeclaration *UsingDeclaration `| @@`
+	TypeAlias        *TypeAlias        `| @@)`
 }
 
 type Statement struct {
 	Include             *IncludeDirective `@@`
 	IgnoredPreprocessor *string           `| @PreprocessorLine`
 	Namespace           *NamespaceDef     `| @@`
-	UsingDirective      *UsingDirective   `| @@`
-	UsingDec            *UsingDeclaration `| @@`
-	TypeAlias           *TypeAlias        `| @@`
+	Using               *UsingStatement   `| @@`
 	ClassDef            *ClassFwd         `| @@`
 }
 
